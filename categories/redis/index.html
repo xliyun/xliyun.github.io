@@ -126,7 +126,7 @@
                 <span class="level-item has-text-grey">
                     
                     
-                    11 分钟 读完 (大约 1647 个字)
+                    13 分钟 读完 (大约 1943 个字)
                 </span>
                 
                 
@@ -316,15 +316,87 @@
 </blockquote>
 <p>示例：</p>
 <p><img src="/2019/11/09/redis%E5%B8%B8%E7%94%A8%E6%8C%87%E4%BB%A4/F:%5CGITHUB-BLOG%5Chexo%5Csource_posts%5Credis%E5%B8%B8%E7%94%A8%E6%8C%87%E4%BB%A4%5C1573280872293.png" alt="1573280872293"></p>
+<h3 id="mget-mset"><a href="#mget-mset" class="headerlink" title="mget mset"></a>mget mset</h3><p>n次get=n次网络时间+n次命令时间</p>
+<p>1次mget=1次网络时间+n次命令时间</p>
+<blockquote>
+<p>mget key1 key2 key 3</p>
+</blockquote>
+<p>批量获取key，原子操作</p>
+<blockquote>
+<p>mset key </p>
+</blockquote>
+<p>批量设置key-value</p>
+<h3 id="getset、append、strlen"><a href="#getset、append、strlen" class="headerlink" title="getset、append、strlen"></a>getset、append、strlen</h3><p>set key newvalue 并返回旧的value</p>
+<blockquote>
+<p>getset key newvalue</p>
+</blockquote>
+<p>将value追加到旧的value</p>
+<blockquote>
+<p>append key value</p>
+</blockquote>
+<p>返回字符串的长度（注意中文）</p>
+<blockquote>
+<p>strlen key</p>
+</blockquote>
+<h3 id="incrbyfloat-getrange-setrange"><a href="#incrbyfloat-getrange-setrange" class="headerlink" title="incrbyfloat getrange setrange"></a>incrbyfloat getrange setrange</h3><p>增加key对应的值3.5（浮点数）</p>
+<blockquote>
+<p>incrbyfloat key 3.5</p>
+</blockquote>
+<p>获取字符串指定下标所有的值</p>
+<blockquote>
+<p>getrange key start end</p>
+</blockquote>
+<p>设置指定下标所有对应的值</p>
+<blockquote>
+<p>setrange key index value</p>
+</blockquote>
+<h3 id="字符串总结"><a href="#字符串总结" class="headerlink" title="字符串总结"></a>字符串总结</h3><table>
+<thead>
+<tr>
+<th>命令</th>
+<th>含义</th>
+<th>复杂度</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>set key value</td>
+<td>设置key-value</td>
+<td>o(1)</td>
+</tr>
+<tr>
+<td>get key</td>
+<td>获取key-value</td>
+<td>o(1)</td>
+</tr>
+<tr>
+<td>del key</td>
+<td>删除key-value</td>
+<td>o(1)</td>
+</tr>
+<tr>
+<td>setnx setxx</td>
+<td>根据key是否存在设置key-value</td>
+<td>o(1)</td>
+</tr>
+<tr>
+<td>incr decr</td>
+<td>计数</td>
+<td>o(1)</td>
+</tr>
+<tr>
+<td>mget mset</td>
+<td>批量操作key-value</td>
+<td>o(1)</td>
+</tr>
+</tbody></table>
 <h2 id="hash结构命令"><a href="#hash结构命令" class="headerlink" title="hash结构命令"></a>hash结构命令</h2><p>Redis的Hash结构类似于Java中的Map&lt;String,Map&lt;String,String&gt;&gt;，键是字符串，值是另一个映射。结构如图:</p>
-<p><img src="/2019/11/09/redis%E5%B8%B8%E7%94%A8%E6%8C%87%E4%BB%A4/1573111325955.png" alt="1573111325955"></p>
+<p><img src="/2019/11/09/redis%E5%B8%B8%E7%94%A8%E6%8C%87%E4%BB%A4/1573318652694.png" alt="1573318652694"></p>
 <p>这里我们称键为key，字段名为hKey，字段值为hValue</p>
 <p>常用指令：</p>
 <blockquote>
-<p>HSET、HSETNX和HET（添加、获取）</p>
+<p>HSET、HSETNX和HGET（添加、获取）</p>
 </blockquote>
-<p>HSET</p>
-<ul>
+<h3 id="HSET"><a href="#HSET" class="headerlink" title="HSET"></a>HSET</h3><ul>
 <li><p>介绍：</p>
 <ul>
 <li><code>HSET key field value</code>  将哈希表key中的字段field的值设为value</li>
@@ -343,54 +415,13 @@
 <p><img src="/2019/11/09/redis%E5%B8%B8%E7%94%A8%E6%8C%87%E4%BB%A4/1573114595320.png" alt="1573114595320"></p>
 </li>
 </ul>
-<blockquote>
-<p>HGET</p>
-</blockquote>
-<ul>
+<h3 id="HGET"><a href="#HGET" class="headerlink" title="HGET"></a>HGET</h3><ul>
 <li>介绍：<code>HGET key field</code> 获取存储在哈希表中指定字段的值</li>
 <li>返回值：返回给定字段的值，如果给定的字段或key不存在时，返回nil</li>
 <li>示例：</li>
 </ul>
 <p><img src="/2019/11/09/redis%E5%B8%B8%E7%94%A8%E6%8C%87%E4%BB%A4/1573114782849.png" alt="1573114782849"></p>
-<blockquote>
-<p>HGETALL</p>
-</blockquote>
-<ul>
-<li><p>介绍：<code>HGETALL key</code> 获取在哈希表中指定key的所有字段和值</p>
-</li>
-<li><p>返回值：</p>
-<p>指定key的所有字段的名及值。返回值里，紧跟每个字段名（field name）之后是字段的值（value），所以返回值的长度是哈希表大小的两倍</p>
-</li>
-<li><p>示例：</p>
-<p><img src="/2019/11/09/redis%E5%B8%B8%E7%94%A8%E6%8C%87%E4%BB%A4/1573114825948.png" alt="1573114825948"></p>
-</li>
-</ul>
-<blockquote>
-<p>HKEYS</p>
-</blockquote>
-<ul>
-<li><p>介绍：HKEYS key 获取所有哈希表中的字段</p>
-</li>
-<li><p>示例</p>
-<p><img src="/2019/11/09/redis%E5%B8%B8%E7%94%A8%E6%8C%87%E4%BB%A4/redis%E5%B8%B8%E7%94%A8%E6%8C%87%E4%BB%A4%5C1573114854155.png" alt="1573114854155"></p>
-</li>
-</ul>
-<blockquote>
-<p>HVALS</p>
-</blockquote>
-<ul>
-<li><p>介绍：<code>KVALS key</code> 获取哈希表中所有的值</p>
-</li>
-<li><p>注意：这个命令不是HVALUES，而是HVALS，是value的缩写：val</p>
-</li>
-<li><p>示例：</p>
-<p><img src="/2019/11/09/redis%E5%B8%B8%E7%94%A8%E6%8C%87%E4%BB%A4/1573114893815.png" alt></p>
-</li>
-</ul>
-<blockquote>
-<p>HDEL（删除）</p>
-</blockquote>
-<p>HDEL命令用于删除哈希表key中的一个或多个指定字段，不存在的字段将被忽略</p>
+<h3 id="HDEL（删除）"><a href="#HDEL（删除）" class="headerlink" title="HDEL（删除）"></a>HDEL（删除）</h3><p>HDEL命令用于删除哈希表key中的一个或多个指定字段，不存在的字段将被忽略</p>
 <ul>
 <li><p>介绍：HDEL key field2 [field2 …] 删除一个或多个哈希表字段</p>
 </li>
@@ -398,6 +429,50 @@
 <p>被成功删除字段的数量，不包括被忽略的的字段</p>
 </li>
 <li><p>示例</p>
+</li>
+</ul>
+<h3 id="HGETALL（获取所有）"><a href="#HGETALL（获取所有）" class="headerlink" title="HGETALL（获取所有）"></a>HGETALL（获取所有）</h3><ul>
+<li><p>介绍：<code>HGETALL key</code> 获取在哈希表中指定key的所有字段和值（它的key和value都返回）</p>
+</li>
+<li><p>返回值：</p>
+<p>指定key的所有字段的名及值。返回值里，紧跟每个字段名（field name）之后是字段的值（value），所以返回值的长度是哈希表大小的两倍</p>
+</li>
+<li><p>示例：</p>
+<p><img src="/2019/11/09/redis%E5%B8%B8%E7%94%A8%E6%8C%87%E4%BB%A4/1573320254297.png" alt="1573320254297"></p>
+</li>
+</ul>
+<h3 id="HEXISTS、HLEN"><a href="#HEXISTS、HLEN" class="headerlink" title="HEXISTS、HLEN"></a>HEXISTS、HLEN</h3><p>判断hash key是否有field</p>
+<blockquote>
+<p>hexists key field</p>
+</blockquote>
+<p>获取hash key field的数量</p>
+<blockquote>
+<p>hlen key</p>
+</blockquote>
+<p>示例：</p>
+<p><img src="/2019/11/09/redis%E5%B8%B8%E7%94%A8%E6%8C%87%E4%BB%A4/1573320388361.png" alt="1573320388361"></p>
+<h3 id="HMGET、HMSET"><a href="#HMGET、HMSET" class="headerlink" title="HMGET、HMSET"></a>HMGET、HMSET</h3><p>批量获取hash key的一批field对应的值</p>
+<blockquote>
+<p>hmget key field1 field2… fieldN</p>
+</blockquote>
+<p>批量设置hash key的一批field value</p>
+<blockquote>
+<p>hmset key field value1 field2 value2 ….</p>
+</blockquote>
+<h3 id="HKEYS"><a href="#HKEYS" class="headerlink" title="HKEYS"></a>HKEYS</h3><ul>
+<li><p>介绍：HKEYS key 获取所有哈希表中的字段</p>
+</li>
+<li><p>示例</p>
+<p><img src="/2019/11/09/redis%E5%B8%B8%E7%94%A8%E6%8C%87%E4%BB%A4/redis%E5%B8%B8%E7%94%A8%E6%8C%87%E4%BB%A4%5C1573114854155.png" alt="1573114854155"></p>
+</li>
+</ul>
+<h3 id="HVALS"><a href="#HVALS" class="headerlink" title="HVALS"></a>HVALS</h3><ul>
+<li><p>介绍：<code>KVALS key</code> 获取哈希表中所有的值</p>
+</li>
+<li><p>注意：这个命令不是HVALUES，而是HVALS，是value的缩写：val</p>
+</li>
+<li><p>示例：</p>
+<p><img src="/2019/11/09/redis%E5%B8%B8%E7%94%A8%E6%8C%87%E4%BB%A4/1573114893815.png" alt></p>
 </li>
 </ul>
 
