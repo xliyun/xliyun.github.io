@@ -115,6 +115,436 @@
         
         <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
             <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-11-10T02:04:17.000Z">2019-11-10</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/redis/">redis</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    30 分钟 读完 (大约 4552 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                <a class="has-link-black-ter" href="/2019/11/10/redis%E6%8C%81%E4%B9%85%E5%8C%96/">redis持久化</a>
+            
+        </h1>
+        <div class="content">
+            <h1 id="Redis持久化数据"><a href="#Redis持久化数据" class="headerlink" title="Redis持久化数据"></a>Redis持久化数据</h1><p>持久化方式有：</p>
+<ul>
+<li>快照：<ul>
+<li>MySQL Dump</li>
+<li>Redis RDB</li>
+</ul>
+</li>
+<li>写日志：<ul>
+<li>MySQL Binglog</li>
+<li>Hbase HLog</li>
+<li>Redis AOF</li>
+</ul>
+</li>
+</ul>
+<h1 id="RDB持久化方式"><a href="#RDB持久化方式" class="headerlink" title="RDB持久化方式"></a>RDB持久化方式</h1><h2 id="什么是RDB"><a href="#什么是RDB" class="headerlink" title="什么是RDB"></a>什么是RDB</h2><ol>
+<li>RDB是Redis内存到硬盘的快照，用于持久化</li>
+<li>save通常会阻塞Redis</li>
+<li>bgsave不会阻塞Redis，但是会for新进程</li>
+<li>save自动配置满足任一就会被执行</li>
+<li>有些触发机制不容忽视</li>
+</ol>
+<p><img src="/2019/11/10/redis%E6%8C%81%E4%B9%85%E5%8C%96/F:%5CGITHUB-BLOG%5Chexo%5Csource_posts%5Credis%E6%8C%81%E4%B9%85%E5%8C%96%5C1573352163830.png" alt="1573352163830"></p>
+<h2 id="触发机制-只要三种方式"><a href="#触发机制-只要三种方式" class="headerlink" title="触发机制-只要三种方式"></a>触发机制-只要三种方式</h2><h3 id="save-同步"><a href="#save-同步" class="headerlink" title="save(同步)"></a>save(同步)</h3><p>使用save命令，就会开始以同步命令的方式同步文件</p>
+<p><img src="/2019/11/10/redis%E6%8C%81%E4%B9%85%E5%8C%96/F:%5CGITHUB-BLOG%5Chexo%5Csource_posts%5Credis%E6%8C%81%E4%B9%85%E5%8C%96%5C1573356330172.png" alt="1573356330172"></p>
+<p><strong>文件策略</strong></p>
+<p>生成一个新的文件，替换老的RDB文件</p>
+<p><img src="/2019/11/10/redis%E6%8C%81%E4%B9%85%E5%8C%96/F:%5CGITHUB-BLOG%5Chexo%5Csource_posts%5Credis%E6%8C%81%E4%B9%85%E5%8C%96%5C1573352843028.png" alt="1573352843028"></p>
+<h3 id="bgsave-异步"><a href="#bgsave-异步" class="headerlink" title="bgsave(异步)"></a>bgsave(异步)</h3><p>使用linux的fork()函数，生成一个redis进程的子进程，生成RDB文件</p>
+<p>注意：如果fork()函数执行的慢，依然会阻塞redis，一般fork函数足够快，所以redis会正常的响应客户端</p>
+<p><img src="/2019/11/10/redis%E6%8C%81%E4%B9%85%E5%8C%96/F:%5CGITHUB-BLOG%5Chexo%5Csource_posts%5Credis%E6%8C%81%E4%B9%85%E5%8C%96%5C1573353011266.png" alt="1573353011266"></p>
+<p><strong>文件策略</strong></p>
+<p>和save相同</p>
+<h3 id="save和bgsave比较"><a href="#save和bgsave比较" class="headerlink" title="save和bgsave比较"></a>save和bgsave比较</h3><table>
+<thead>
+<tr>
+<th>命令</th>
+<th>save</th>
+<th>bgsave</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>IO类型</td>
+<td>同步</td>
+<td>异步</td>
+</tr>
+<tr>
+<td>是否阻塞</td>
+<td>是</td>
+<td>是（阻塞发生在fork）</td>
+</tr>
+<tr>
+<td>复杂度</td>
+<td>O(n)</td>
+<td>O(n)</td>
+</tr>
+<tr>
+<td>优点</td>
+<td>不会消耗额外内存</td>
+<td>不阻塞客户端命令</td>
+</tr>
+<tr>
+<td>缺点</td>
+<td>阻塞客户端命令</td>
+<td>需要fork,消耗内存</td>
+</tr>
+</tbody></table>
+<h3 id="自动"><a href="#自动" class="headerlink" title="自动"></a>自动</h3><p>Redis提供了RDB的save配置，其实就是内部执行了bgsave</p>
+<p><img src="/2019/11/10/redis%E6%8C%81%E4%B9%85%E5%8C%96/F:%5CGITHUB-BLOG%5Chexo%5Csource_posts%5Credis%E6%8C%81%E4%B9%85%E5%8C%96%5C1573354435631.png" alt="1573354435631"></p>
+<p><strong>默认配置</strong></p>
+<p>60秒内change了10000条数据以上，三个条件满足一个就会触发bgsave</p>
+<p>stop-writes-on-bgsave-error:bgsave发生异常，停止写入</p>
+<p>rdbcompression:是否压缩</p>
+<p>rdbchecksum:是否采用校验和的方式</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">save 900 1</span><br><span class="line">save 300 10</span><br><span class="line">save 60 10000</span><br><span class="line">dbfilename dump.rdb</span><br><span class="line">dir ./</span><br><span class="line">stop-writes-on-bgsave-error yes</span><br><span class="line">rdbcompression yes</span><br><span class="line">rdbchecksum yes</span><br></pre></td></tr></table></figure>
+
+<p>最佳配置</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">dbfilename dump-$&#123;port&#125;.rdb</span><br><span class="line">dir /bigdiskpath</span><br><span class="line">stop-writes-on-bgsave-error yes</span><br><span class="line">rdbcompression yes</span><br><span class="line">rdbchecksum yes</span><br></pre></td></tr></table></figure>
+
+<h2 id="触发机制-不容忽略方式"><a href="#触发机制-不容忽略方式" class="headerlink" title="触发机制-不容忽略方式"></a>触发机制-不容忽略方式</h2><p>会触发生成RDB文件的方式</p>
+<ol>
+<li>全量复制：主从重复的时候</li>
+<li>debug reload：不会将内存清空的重启</li>
+<li>shutdown：执行shutdown</li>
+</ol>
+<p>示例：</p>
+<figure class="highlight shell hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">#</span><span class="hljs-bash">端口号</span></span><br><span class="line">port 6379</span><br><span class="line"><span class="hljs-meta">#</span><span class="hljs-bash">是否以守护进程的方式执行</span></span><br><span class="line">daemonize yes</span><br><span class="line"><span class="hljs-meta">#</span><span class="hljs-bash">生成pid的文件名</span></span><br><span class="line">pidfile /var/run/redis_6379.pid</span><br><span class="line"><span class="hljs-meta">#</span><span class="hljs-bash">日志</span></span><br><span class="line">logfile "6379.log"</span><br><span class="line"><span class="hljs-meta">#</span><span class="hljs-bash">日志级别</span></span><br><span class="line">loglevel notice</span><br><span class="line"></span><br><span class="line"><span class="hljs-meta">#</span><span class="hljs-bash">RDB配置 注释掉默认配置</span></span><br><span class="line"><span class="hljs-meta">#</span><span class="hljs-bash">save 900 1</span></span><br><span class="line"><span class="hljs-meta">#</span><span class="hljs-bash">save 300 10</span></span><br><span class="line"><span class="hljs-meta">#</span><span class="hljs-bash">save 60 10000</span></span><br><span class="line"></span><br><span class="line"><span class="hljs-meta">#</span><span class="hljs-bash">使用的是默认配置，</span></span><br><span class="line">stop-writes-on-bgsave-error yes</span><br><span class="line">rdbcompression yes</span><br><span class="line">rdbchecksum yes</span><br><span class="line"></span><br><span class="line"><span class="hljs-meta">#</span><span class="hljs-bash">修改rdb文件</span></span><br><span class="line">dbfilename dump_6379.rdb</span><br><span class="line"><span class="hljs-meta">#</span><span class="hljs-bash">修改rdb保存目录</span></span><br><span class="line">dir ./</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="AOF持久化方式"><a href="#AOF持久化方式" class="headerlink" title="AOF持久化方式"></a>AOF持久化方式</h2><h3 id="RDB现存问题"><a href="#RDB现存问题" class="headerlink" title="RDB现存问题"></a>RDB现存问题</h3><ol>
+<li><p>耗时、耗性能</p>
+<p>redis将内存的数据dump到硬盘当中，生成rdb文件</p>
+<p><img src="/2019/11/10/redis%E6%8C%81%E4%B9%85%E5%8C%96/F:%5CGITHUB-BLOG%5Chexo%5Csource_posts%5Credis%E6%8C%81%E4%B9%85%E5%8C%96%5C1573376564295.png" alt="1573376564295"></p>
+<ul>
+<li>O(n)数据：耗时</li>
+<li>fork()：消耗内存，copy-on-write策略</li>
+<li>Disk I/O：IO性能</li>
+</ul>
+</li>
+<li><p>不可控、丢失数据</p>
+<table>
+<thead>
+<tr>
+<th>时间戳</th>
+<th>save</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>T1</td>
+<td>执行多个写命令</td>
+</tr>
+<tr>
+<td>T2</td>
+<td>满足RDB自动的创建的条件</td>
+</tr>
+<tr>
+<td>T3</td>
+<td>再次执行多个写命令</td>
+</tr>
+<tr>
+<td>T4</td>
+<td>宕机（<strong>在这里就会发生数据丢失</strong>）</td>
+</tr>
+</tbody></table>
+</li>
+</ol>
+<h3 id="什么是AOF"><a href="#什么是AOF" class="headerlink" title="什么是AOF"></a>什么是AOF</h3><p>AOF后台执行的方式和RDB有类似的地方，fork一个子进程，主进程仍进行服务，子进程执行AOF持久化，数据被dump到磁盘上。与RDB不同的是，后台子进程持久化过程中，主进程会记录期间的所有数据变更（主进程还在服务），并存储在server.aof_rewrite_buf_blocks中；后台子进程结束后，Redis更新缓存到AOF文件中，是RDB持久化所不具备的。</p>
+<p>更新缓存可以存储在 server.aof<em>buf 中，你可以把它理解为一个小型临时中转站，所有累积的更新缓存都会先放入这里，它会在特定时机写入文件或者插入到server.aof</em>-rewrite_buf_blocks 下链表（下面会详述）；server.aof<em>buf 中的数据在 propagrate() 添加，在涉及数据更新的地方都会调用propagrate() 以累积变更。更新缓存也可以存储在 server.aof</em>-rewrite_buf_blocks，这是一个元素类型为  struct aofrwblock 的链表，你可以把它理解为一个仓库，当后台有AOF 子进程的时候，会将累积的更新缓存（在  server.aof_buf 中）插入到链表中，而当 AOF 子进程结束，它会被整个写入到文件。两者是有关联的。</p>
+<p>这里的意图即是不用每次出现数据变更的时候都触发一个写操作，可以将写操作先缓存到内存中，待到合适的时机写入到磁盘，如此避免频繁的写操作。当然，完全可以实现让数据变更及时更新到磁盘中。两种做法的好坏就是一种博弈了。</p>
+<p>这里有两篇文章，一篇讲AOF的write和save</p>
+<blockquote>
+<p><a href="https://blog.csdn.net/luolaifa000/article/details/84178289" target="_blank" rel="noopener">https://blog.csdn.net/luolaifa000/article/details/84178289</a></p>
+</blockquote>
+<p>一篇通过源码角度看redis AOF</p>
+<blockquote>
+<p> <a href="https://www.cnblogs.com/williamjie/p/9546663.html" target="_blank" rel="noopener">https://www.cnblogs.com/williamjie/p/9546663.html</a></p>
+</blockquote>
+<p><img src="/2019/11/10/redis%E6%8C%81%E4%B9%85%E5%8C%96/F:%5CGITHUB-BLOG%5Chexo%5Csource_posts%5Credis%E6%8C%81%E4%B9%85%E5%8C%96%5C1573377139829.png" alt="1573377139829"></p>
+<p><img src="/2019/11/10/redis%E6%8C%81%E4%B9%85%E5%8C%96/F:%5CGITHUB-BLOG%5Chexo%5Csource_posts%5Credis%E6%8C%81%E4%B9%85%E5%8C%96%5C1573377206741.png" alt="1573377206741"></p>
+<h3 id="AOF三种策略"><a href="#AOF三种策略" class="headerlink" title="AOF三种策略"></a>AOF三种策略</h3><p>always</p>
+<p>每条命令都写入到硬盘当中</p>
+<p><img src="/2019/11/10/redis%E6%8C%81%E4%B9%85%E5%8C%96/F:%5CGITHUB-BLOG%5Chexo%5Csource_posts%5Credis%E6%8C%81%E4%B9%85%E5%8C%96%5C1573377309501.png" alt="1573377309501"></p>
+<p>everysec</p>
+<p>每秒把数据刷新到硬盘（是配置的默认值）</p>
+<p><img src="/2019/11/10/redis%E6%8C%81%E4%B9%85%E5%8C%96/F:%5CGITHUB-BLOG%5Chexo%5Csource_posts%5Credis%E6%8C%81%E4%B9%85%E5%8C%96%5C1573377478670.png" alt="1573377478670"></p>
+<p>no</p>
+<p>由系统决定什么时候刷新</p>
+<p><img src="/2019/11/10/redis%E6%8C%81%E4%B9%85%E5%8C%96/F:%5CGITHUB-BLOG%5Chexo%5Csource_posts%5Credis%E6%8C%81%E4%B9%85%E5%8C%96%5C1573378830493.png" alt="1573378830493"></p>
+<p>always、everysec、no</p>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>always</th>
+<th>everysec</th>
+<th>no</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>优点</td>
+<td>不丢失数据</td>
+<td>每秒一次fsync丢1秒数据</td>
+<td>不用管</td>
+</tr>
+<tr>
+<td>缺点</td>
+<td>IO开销较大，一般的sata盘只有几百TPS</td>
+<td>丢1秒数据</td>
+<td>不可控</td>
+</tr>
+</tbody></table>
+<h3 id="AOF重写"><a href="#AOF重写" class="headerlink" title="AOF重写"></a>AOF重写</h3><p>AOP重写的好处</p>
+<ul>
+<li>减少磁盘用量</li>
+<li>加快恢复速度</li>
+</ul>
+<p><img src="/2019/11/10/redis%E6%8C%81%E4%B9%85%E5%8C%96/F:%5CGITHUB-BLOG%5Chexo%5Csource_posts%5Credis%E6%8C%81%E4%B9%85%E5%8C%96%5C1573379353372.png" alt="1573379353372"></p>
+<h3 id="AOP重写实现的两种方式"><a href="#AOP重写实现的两种方式" class="headerlink" title="AOP重写实现的两种方式"></a>AOP重写实现的两种方式</h3><h4 id="bgrewriteaof"><a href="#bgrewriteaof" class="headerlink" title="bgrewriteaof"></a><strong>bgrewriteaof</strong></h4><p>（这里就是往硬盘里重写数据，上面的图只是为了演示）</p>
+<p><img src="/2019/11/10/redis%E6%8C%81%E4%B9%85%E5%8C%96/F:%5CGITHUB-BLOG%5Chexo%5Csource_posts%5Credis%E6%8C%81%E4%B9%85%E5%8C%96%5C1573379996674.png" alt="1573379996674"></p>
+<h4 id="AOF重写配置"><a href="#AOF重写配置" class="headerlink" title="AOF重写配置"></a><strong>AOF重写配置</strong></h4><p>实际上也是执行了bgrewriteaof</p>
+<p>配置</p>
+<figure class="highlight shell hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">#</span><span class="hljs-bash">AOF文件重写需要的尺寸</span></span><br><span class="line">auto-aof-rewrite-min-size</span><br><span class="line"><span class="hljs-meta">#</span><span class="hljs-bash">AOF文件增长率</span></span><br><span class="line">auto-aof-rewrite-percentage</span><br></pre></td></tr></table></figure>
+
+<p>统计</p>
+<figure class="highlight shell hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">#</span><span class="hljs-bash">AOF当前尺寸（单位：字节）</span></span><br><span class="line">aof_current_size</span><br><span class="line"><span class="hljs-meta">#</span><span class="hljs-bash">AOF上次启动和重写的尺寸（单位：字节）</span></span><br><span class="line">aof_base_size</span><br></pre></td></tr></table></figure>
+
+<p>自动触发时机</p>
+<blockquote>
+<p>#当前尺寸大于最小尺寸<br>aof_current_size &gt; auto-aof-rewrite-min-size<br>#增长率 当前尺寸-上一次重写(或者重启)的尺寸/上一次重写(或者重启)的尺寸 &gt;<br>aof_current_size - aof_base_size/aof_base_size &gt; auto-aof-rewrite-percentage</p>
+</blockquote>
+<h3 id="AOF重写流程"><a href="#AOF重写流程" class="headerlink" title="AOF重写流程"></a>AOF重写流程</h3><p><img src="/2019/11/10/redis%E6%8C%81%E4%B9%85%E5%8C%96/F:%5CGITHUB-BLOG%5Chexo%5Csource_posts%5Credis%E6%8C%81%E4%B9%85%E5%8C%96%5C1573381041904.png" alt="1573381041904"></p>
+<h3 id="AOF配置"><a href="#AOF配置" class="headerlink" title="AOF配置"></a>AOF配置</h3><figure class="highlight shell hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">#</span><span class="hljs-bash">将AOF功能打开</span></span><br><span class="line">appendonly yes</span><br><span class="line"></span><br><span class="line"><span class="hljs-meta">#</span><span class="hljs-bash">AOF的文件名</span></span><br><span class="line">appendfilename "appendonly-$&#123;port&#125;.aof"</span><br><span class="line"></span><br><span class="line"><span class="hljs-meta">#</span><span class="hljs-bash">AOF同步的三种策略</span></span><br><span class="line">appendfsync everysec</span><br><span class="line"></span><br><span class="line"><span class="hljs-meta">#</span><span class="hljs-bash">保存rdb aof 和日志的目录</span></span><br><span class="line">dir /bigdiskpath</span><br><span class="line"></span><br><span class="line"><span class="hljs-meta">#</span><span class="hljs-bash">AOF重写的时候，是否要做AOF的apend操作(这里配置的是不进行次操作)，就是在AOF重写的时候（比较消耗性能），这段时间是否继续写AOF，如果AOF重写失败，</span></span><br><span class="line">no-appendfsync-on-rewrite yes</span><br><span class="line"></span><br><span class="line"><span class="hljs-meta">#</span><span class="hljs-bash">增长率</span></span><br><span class="line">auto-aof-rewrite-percentage 100</span><br><span class="line"></span><br><span class="line"><span class="hljs-meta">#</span><span class="hljs-bash">尺寸</span></span><br><span class="line">auto-aof-rewrite-min-size 64mb</span><br></pre></td></tr></table></figure>
+
+
+
+<p>no-appendfsync-on-rewrite解释：</p>
+<blockquote>
+<p>bgrewriteaof机制，在一个子进程中进行aof的重写，从而不阻塞主进程对其余命令的处理，同时解决了aof文件过大问题。</p>
+<p>现在问题出现了，<strong>同时在执行bgrewriteaof操作和主进程写aof文件的操作，两者都会操作磁盘，而bgrewriteaof往往会涉及大量磁盘操作，这样就会造成主进程在写aof文件的时候出现阻塞的情形</strong>，现在no-appendfsync-on-rewrite参数出场了。如果该参数设置为no，是最安全的方式，不会丢失数据，但是要忍受阻塞的问题。如果设置为yes呢？这就相当于将appendfsync设置为no，这说明并没有执行磁盘操作，只是写入了缓冲区，因此这样并不会造成阻塞（因为没有竞争磁盘），但是如果这个时候redis挂掉，就会丢失数据。丢失多少数据呢？在linux的操作系统的默认设置下，最多会丢失30s的数据。</p>
+</blockquote>
+<blockquote>
+<p>aof 和 rdb 是两个机制, 没有什么关系<br>如果 no-appendfsync-on-rewrite=yes, 这个时候主线程的 set 操作会被阻塞掉, 由于没有新的值写入 redis, 所有就没有这个时候数据丢失的可能. 一旦 tmp.aof 重写成功, 就不会有数据丢失.<br>如果<br>no-appendfsync-on-rewrite=no, 这个时候主线程的 set 操作不会阻塞, 就会有新值写入 redis,<br>但是这部分记录不会同步到硬盘上, 就会有数据丢失的问题可能. 一旦 tmp.aof 重写成功就发生故障, 就会产生数据丢失.</p>
+</blockquote>
+<h3 id="AOF试验"><a href="#AOF试验" class="headerlink" title="AOF试验"></a>AOF试验</h3><figure class="highlight shell hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">#</span><span class="hljs-bash">查看AOF功能是否打开，</span></span><br><span class="line">config get appendonly</span><br><span class="line">config set appendonly</span><br><span class="line"><span class="hljs-meta">#</span><span class="hljs-bash">将 appendonly 的修改写入到 redis.conf 中</span></span><br><span class="line">config rewrite</span><br><span class="line"></span><br><span class="line"><span class="hljs-meta">#</span><span class="hljs-bash">这时候应该就生成了aof文件</span></span><br><span class="line"><span class="hljs-meta">#</span><span class="hljs-bash">开始aof重写数据</span></span><br><span class="line">bgrewriteaof</span><br></pre></td></tr></table></figure>
+
+
+
+<p>一篇AOF持久化的文章</p>
+<p><a href="https://blog.csdn.net/yangyutong0506/article/details/46880773" target="_blank" rel="noopener">https://blog.csdn.net/yangyutong0506/article/details/46880773</a></p>
+<h2 id="RDB和AOF的抉择"><a href="#RDB和AOF的抉择" class="headerlink" title="RDB和AOF的抉择"></a>RDB和AOF的抉择</h2><h3 id="RDB和AOF比较"><a href="#RDB和AOF比较" class="headerlink" title="RDB和AOF比较"></a>RDB和AOF比较</h3><table>
+<thead>
+<tr>
+<th>命令</th>
+<th>RDB</th>
+<th>AOF</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>启动优先级</td>
+<td>低</td>
+<td>高</td>
+</tr>
+<tr>
+<td>体积</td>
+<td>小</td>
+<td>大</td>
+</tr>
+<tr>
+<td>恢复速度</td>
+<td>快</td>
+<td>慢</td>
+</tr>
+<tr>
+<td>数据安全性</td>
+<td>丢数据</td>
+<td>根据策略决定</td>
+</tr>
+<tr>
+<td>轻重</td>
+<td>重</td>
+<td>轻</td>
+</tr>
+</tbody></table>
+<h3 id="RDB最佳策略"><a href="#RDB最佳策略" class="headerlink" title="RDB最佳策略"></a>RDB最佳策略</h3><ol>
+<li>关</li>
+<li>集中管理</li>
+<li>主从，从开</li>
+</ol>
+<h3 id="AOF最佳策略"><a href="#AOF最佳策略" class="headerlink" title="AOF最佳策略"></a>AOF最佳策略</h3><ol>
+<li>“开”：缓存和存储</li>
+<li>AOF重写集中管理</li>
+<li>everysec(每秒)</li>
+</ol>
+<h3 id="最佳策略"><a href="#最佳策略" class="headerlink" title="最佳策略"></a>最佳策略</h3><ol>
+<li>小分片(maxmemory)</li>
+<li>缓存或者存储</li>
+<li>监控（硬盘、内存、负载、网络）</li>
+<li>足够的内存</li>
+</ol>
+<h2 id="开发运维常见问题"><a href="#开发运维常见问题" class="headerlink" title="开发运维常见问题"></a>开发运维常见问题</h2><h3 id="fork操作"><a href="#fork操作" class="headerlink" title="fork操作"></a>fork操作</h3><ol>
+<li><p>同步操作</p>
+<p>for操作只是做内存页的拷贝，而不是内存的拷贝，但是如果fork操作阻塞了，会阻塞redis主线程</p>
+</li>
+<li><p>与内存量息息相关：内存越大，耗时越长（与机器类型有关）</p>
+</li>
+<li><p>info:latest_fork_userc(查看上一次执行fork时使用的微秒数)</p>
+</li>
+</ol>
+<h4 id="改善fork"><a href="#改善fork" class="headerlink" title="改善fork"></a>改善fork</h4><ol>
+<li>优先使用物理机或者高效支持fork操作的虚拟化技术</li>
+<li>控制Redis实例最大可用内存：maxmemory</li>
+<li>合理配置Linux内存分配策略：vm.overcommit_memory=1(默认是0)</li>
+<li>降低fork频率：例如放款AOF重写的自动触发机制，不必要的全量复制</li>
+</ol>
+<h3 id="子进程的开销和优化"><a href="#子进程的开销和优化" class="headerlink" title="子进程的开销和优化"></a>子进程的开销和优化</h3><ol>
+<li>CPU<ul>
+<li>开销：RDB和AOF文件生成（主要体现在文件的重写bgsave、bgrewriteaof将内存的数据写到硬盘），属于CPU密集型</li>
+<li>优化：不做CPU绑定，不和CPU密集型部署</li>
+</ul>
+</li>
+<li>内存<ul>
+<li>开销：fork内存开销，copy-on-write（linux父子进程会共享相同的物理内存文件，父进程有写请求的时候，数据会被复制，从而使各个进程拥有各自的拷贝，这时候才会消耗内存）。</li>
+<li>优化：echo never &gt; /sys/kernel/mm/transparent_hugepage/enabled (不允许单机多实例的时候产生大量的重写，然后在主进程写入量比较少的时候去做一个bgsave或者aof重写，再就是这个配置，linux在2.6.38版本里面增加了THP的特性，支持大的内存页的分配，由原来的4k变成2m)</li>
+</ul>
+</li>
+<li>硬盘<ul>
+<li>开销：AOF和RDB文件写入，可以结合iostat,iotop分析</li>
+<li>不要和高硬盘负载服务部署在一起：存储服务、消息队列等</li>
+<li>no-appendfsync-on-rewrite = yes (禁止AOF重写时追加的操作)</li>
+<li>根据写入量决定磁盘类型 ：例如ssd</li>
+<li>单机多实例持久化文件目录可以考虑分盘</li>
+</ul>
+</li>
+</ol>
+<h3 id="AOF追加阻塞"><a href="#AOF追加阻塞" class="headerlink" title="AOF追加阻塞"></a>AOF追加阻塞</h3><p>原理看一下下面追加的AOF保存</p>
+<p><img src="/2019/11/10/redis%E6%8C%81%E4%B9%85%E5%8C%96/F:%5CGITHUB-BLOG%5Chexo%5Csource_posts%5Credis%E6%8C%81%E4%B9%85%E5%8C%96%5C1573458936954.png" alt="1573458936954"></p>
+<p>从</p>
+<p><img src="/2019/11/10/redis%E6%8C%81%E4%B9%85%E5%8C%96/F:%5CGITHUB-BLOG%5Chexo%5Csource_posts%5Credis%E6%8C%81%E4%B9%85%E5%8C%96%5C1573459049345.png" alt="1573459049345"></p>
+<p>和info persistence命令（每发生一次，就会加1）</p>
+<p><img src="/2019/11/10/redis%E6%8C%81%E4%B9%85%E5%8C%96/F:%5CGITHUB-BLOG%5Chexo%5Csource_posts%5Credis%E6%8C%81%E4%B9%85%E5%8C%96%5C1573459064885.png" alt="1573459064885"></p>
+<p>都可以看到</p>
+<p>还可以通过top命令</p>
+<p><img src="/2019/11/10/redis%E6%8C%81%E4%B9%85%E5%8C%96/F:%5CGITHUB-BLOG%5Chexo%5Csource_posts%5Credis%E6%8C%81%E4%B9%85%E5%8C%96%5C1573459302641.png" alt="1573459302641"></p>
+<h3 id="单机多实例部署"><a href="#单机多实例部署" class="headerlink" title="单机多实例部署"></a>单机多实例部署</h3><h2 id="AOF保存"><a href="#AOF保存" class="headerlink" title="AOF保存"></a>AOF保存</h2><h3 id="AOF文件写入和保存"><a href="#AOF文件写入和保存" class="headerlink" title="AOF文件写入和保存"></a>AOF文件写入和保存</h3><p>每当服务器常规任务函数被执行、 或者事件处理器被执行时， <code>aof.c/flushAppendOnlyFile</code> 函数都会被调用， 这个函数执行以下两个工作：</p>
+<ol>
+<li>WRITE：根据条件，将 <code>aof_buf</code> 中的缓存写入到 AOF 文件。</li>
+<li>SAVE：根据条件，调用 <code>fsync</code> 或 <code>fdatasync</code> 函数，将 AOF 文件保存到磁盘中。</li>
+</ol>
+<p>两个步骤都需要根据一定的条件来执行， 而这些条件由 AOF 所使用的保存模式来决定， 以下小节就来介绍 AOF 所使用的三种保存模式， 以及在这些模式下， 步骤 WRITE 和 SAVE 的调用条件。</p>
+<h3 id="AOF保存模式"><a href="#AOF保存模式" class="headerlink" title="AOF保存模式"></a>AOF保存模式</h3><p>Redis目前支持三种AOF保存模式，它们分别是：</p>
+<p>AOF_FSYNC_NO: 不保存</p>
+<p>AOF_FSYNC_EVERYSEC: 每一秒保存一次</p>
+<p>AOF_FSYNC_ALWAYS: 每执行一个命令保存一次</p>
+<h3 id="不保存"><a href="#不保存" class="headerlink" title="不保存"></a>不保存</h3><p>在这种模式下， 每次调用 <code>flushAppendOnlyFile</code> 函数， WRITE 都会被执行， 但 SAVE 会被略过。</p>
+<p>在这种模式下， SAVE 只会在以下任意一种情况中被执行：</p>
+<ul>
+<li>Redis 被关闭</li>
+<li>AOF 功能被关闭</li>
+<li>系统的写缓存被刷新（可能是缓存已经被写满，或者定期保存操作被执行）</li>
+</ul>
+<p>这三种情况下的 SAVE 操作都会引起 Redis 主进程阻塞。</p>
+<h3 id="每一秒钟保存一次"><a href="#每一秒钟保存一次" class="headerlink" title="每一秒钟保存一次"></a>每一秒钟保存一次</h3><p>在这种模式中， SAVE 原则上每隔一秒钟就会执行一次， 因为 SAVE 操作是由后台子线程调用的， 所以它不会引起服务器主进程阻塞。</p>
+<p>注意， 在上一句的说明里面使用了词语“原则上”， 在实际运行中， 程序在这种模式下对 fsync 或 fdatasync 的调用并不是每秒一次， 它和调用 flushAppendOnlyFile 函数时 Redis 所处的状态有关。</p>
+<p>每当 flushAppendOnlyFile 函数被调用时， 可能会出现以下四种情况：</p>
+<ul>
+<li><p>子进程正在执行SAVE，并且：</p>
+<ol>
+<li><p>这个SAVE的执行时间未超过2秒，那么程序直接返回，并不执行WRITE或新的SAVE</p>
+</li>
+<li><p><strong>这个SAVE已经执行超过了2秒，那么程序执行WRITE，单不执行新的SAVE。注意，因为这时的WRITE的写入必须等待子线程先完成（旧的）SAVE，因此这里WRITE会比平时阻塞更长时间</strong></p>
+</li>
+</ol>
+</li>
+<li><p>子进程没有在执行SAVE，并且：</p>
+<ol start="3">
+<li>上次成功执行 SAVE 距今不超过 1 秒，那么程序执行 WRITE ，但不执行 SAVE 。</li>
+<li>次成功执行 SAVE 距今已经超过 1 秒，那么程序执行 WRITE 和 SAVE 。</li>
+</ol>
+</li>
+</ul>
+<p>如下图：</p>
+<p><img src="https://redisbook.readthedocs.io/en/latest/_images/graphviz-1b226a6d0f09ed1b61a30d899372834634b96504.svg" alt="img"></p>
+<p>根据以上说明可以知道， 在“每一秒钟保存一次”模式下， 如果在情况 1 中发生故障停机， 那么用户最多损失小于 2 秒内所产生的所有数据。</p>
+<p>如果在情况 2 中发生故障停机， 那么用户损失的数据是可以超过 2 秒的。</p>
+<p>Redis 官网上所说的， AOF 在“每一秒钟保存一次”时发生故障， 只丢失 1 秒钟数据的说法， 实际上并不准确。</p>
+<h3 id="每执行一个命令保存一次"><a href="#每执行一个命令保存一次" class="headerlink" title="每执行一个命令保存一次"></a>每执行一个命令保存一次</h3><p>在这种模式下，每次执行完一个命令之后， WRITE 和 SAVE 都会被执行。</p>
+<p>另外，因为 SAVE 是由 Redis 主进程执行的，所以在 SAVE 执行期间，主进程会被阻塞，不能接受命令请求。</p>
+<h3 id="AOF-保存模式对性能和安全性的影响"><a href="#AOF-保存模式对性能和安全性的影响" class="headerlink" title="AOF 保存模式对性能和安全性的影响"></a>AOF 保存模式对性能和安全性的影响</h3><p>对于三种 AOF 保存模式， 它们对服务器主进程的阻塞情况如下：</p>
+<ol>
+<li>不保存（AOF_FSYNC_NO）：写入和保存都由主进程执行，两个操作都会阻塞主进程。</li>
+<li>每一秒钟保存一次（AOF_FSYNC_EVERYSEC）：写入操作由主进程执行，阻塞主进程。<strong>保存操作由子线程执行，不直接阻塞主进程，但保存操作完成的快慢会影响写入操作的阻塞时长。（上面flushAppendOnlyFile 第二种情况）</strong></li>
+<li>每执行一个命令保存一次（AOF_FSYNC_ALWAYS）：和模式 1 一样。</li>
+</ol>
+<p>模式 1 的保存操作只会在AOF 关闭或 Redis 关闭时执行， 或者由操作系统触发， 在一般情况下， 这种模式只需要为写入阻塞，  因此它的写入性能要比后面两种模式要高， 当然， 这种性能的提高是以降低安全性为代价的： 在这种模式下， 如果运行的中途发生停机，  那么丢失数据的数量由操作系统的缓存冲洗策略决定。</p>
+<p>模式 2 在性能方面要优于模式 3 ， 并且在通常情况下， 这种模式最多丢失不多于 2 秒的数据， 所以它的安全性要高于模式 1 ， 这是一种兼顾性能和安全性的保存方案。</p>
+<p>模式 3 的安全性是最高的， 但性能也是最差的， 因为服务器必须阻塞直到命令信息被写入并保存到磁盘之后， 才能继续处理请求。</p>
+<p>综合起来，三种 AOF 模式的操作特性可以总结如下：</p>
+<table>
+<thead>
+<tr>
+<th>模式</th>
+<th>WRITE 是否阻塞？</th>
+<th>SAVE 是否阻塞？</th>
+<th>停机时丢失的数据量</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>AOF_FSYNC_NO</code></td>
+<td>阻塞</td>
+<td>阻塞</td>
+<td>操作系统最后一次对 AOF 文件触发 SAVE 操作之后的数据。</td>
+</tr>
+<tr>
+<td><code>AOF_FSYNC_EVERYSEC</code></td>
+<td>阻塞</td>
+<td>不阻塞</td>
+<td>一般情况下不超过 2 秒钟的数据。</td>
+</tr>
+<tr>
+<td><code>AOF_FSYNC_ALWAYS</code></td>
+<td>阻塞</td>
+<td>阻塞</td>
+<td>最多只丢失一个命令的数据。</td>
+</tr>
+</tbody></table>
+
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+
+
+
+
+
+    
+<div class="card">
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
                 <time class="level-item has-text-grey" datetime="2019-11-09T06:11:23.000Z">2019-11-09</time>
                 
                 <div class="level-item">
@@ -533,7 +963,7 @@
                         文章
                     </p>
                     <p class="title has-text-weight-normal">
-                        2
+                        3
                     </p>
                 </div>
             </div>
@@ -617,7 +1047,7 @@
                 <span class="level-item">redis</span>
             </span>
             <span class="level-end">
-                <span class="level-item tag">1</span>
+                <span class="level-item tag">2</span>
             </span>
         </a></li><li>
         <a class="level is-marginless" href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F/">
@@ -646,6 +1076,25 @@
         <h3 class="menu-label">
             最新文章
         </h3>
+        
+        <article class="media">
+            
+            <a href="/2019/11/10/redis%E6%8C%81%E4%B9%85%E5%8C%96/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="/images/thumbnail.svg" alt="redis持久化">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-11-10T02:04:17.000Z">2019-11-10</time></div>
+                    <a href="/2019/11/10/redis%E6%8C%81%E4%B9%85%E5%8C%96/" class="title has-link-black-ter is-size-6 has-text-weight-normal">redis持久化</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/redis/">redis</a>
+                    </p>
+                </div>
+            </div>
+        </article>
         
         <article class="media">
             
@@ -732,7 +1181,7 @@
         <h3 class="menu-label">
             标签云
         </h3>
-        <a href="/tags/nginx/" style="font-size: 10px;">nginx</a> <a href="/tags/nosql/" style="font-size: 10px;">nosql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F/" style="font-size: 10px;">分布式</a>
+        <a href="/tags/nginx/" style="font-size: 10px;">nginx</a> <a href="/tags/nosql/" style="font-size: 20px;">nosql</a> <a href="/tags/redis/" style="font-size: 20px;">redis</a> <a href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F/" style="font-size: 10px;">分布式</a>
     </div>
 </div>
         
@@ -750,7 +1199,7 @@
                     <span class="level-item">十一月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">2</span>
+                    <span class="level-item tag">3</span>
                 </span>
             </a>
         </li>
@@ -778,14 +1227,14 @@
                 <div class="control">
                     <a class="tags has-addons" href="/tags/nosql/">
                         <span class="tag">nosql</span>
-                        <span class="tag is-grey">1</span>
+                        <span class="tag is-grey">2</span>
                     </a>
                 </div>
                 
                 <div class="control">
                     <a class="tags has-addons" href="/tags/redis/">
                         <span class="tag">redis</span>
-                        <span class="tag is-grey">1</span>
+                        <span class="tag is-grey">2</span>
                     </a>
                 </div>
                 
@@ -820,7 +1269,7 @@
         <h3 class="menu-label">
             标签云
         </h3>
-        <a href="/tags/nginx/" style="font-size: 10px;">nginx</a> <a href="/tags/nosql/" style="font-size: 10px;">nosql</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F/" style="font-size: 10px;">分布式</a>
+        <a href="/tags/nginx/" style="font-size: 10px;">nginx</a> <a href="/tags/nosql/" style="font-size: 20px;">nosql</a> <a href="/tags/redis/" style="font-size: 20px;">redis</a> <a href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F/" style="font-size: 10px;">分布式</a>
     </div>
 </div>
     
@@ -838,7 +1287,7 @@
                     <span class="level-item">十一月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">2</span>
+                    <span class="level-item tag">3</span>
                 </span>
             </a>
         </li>
@@ -866,14 +1315,14 @@
                 <div class="control">
                     <a class="tags has-addons" href="/tags/nosql/">
                         <span class="tag">nosql</span>
-                        <span class="tag is-grey">1</span>
+                        <span class="tag is-grey">2</span>
                     </a>
                 </div>
                 
                 <div class="control">
                     <a class="tags has-addons" href="/tags/redis/">
                         <span class="tag">redis</span>
-                        <span class="tag is-grey">1</span>
+                        <span class="tag is-grey">2</span>
                     </a>
                 </div>
                 
